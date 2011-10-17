@@ -134,7 +134,8 @@ class MakePom(val log: Logger)
 			{ scopeAndOptional(dependency) }
 			{ classifier(dependency) }
 			{
-				val (warns, excls) = List.separate(excl.map(makeExclusion))
+			  val es = excl.map(makeExclusion)
+				val (warns, excls) = (for (Left(x) <- es) yield x, for (Right(x) <- es) yield x)
 				if(!warns.isEmpty) log.warn(warns.mkString(IO.Newline))
 				if(excls.isEmpty) NodeSeq.Empty
 				else

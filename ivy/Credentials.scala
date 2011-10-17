@@ -38,8 +38,8 @@ object Credentials
 		{
 			val properties = read(path)
 			def get(keys: List[String]) = keys.flatMap(properties.get).headOption.toRight(keys.head + " not specified in credentials file: " + path)
-
-			List.separate( List(RealmKeys, HostKeys, UserKeys, PasswordKeys).map(get) ) match
+			val es = List(RealmKeys, HostKeys, UserKeys, PasswordKeys).map(get)
+      (for (Left(x) <- es) yield x, for (Right(x) <- es) yield x) match 
 			{
 				case (Nil, List(realm, host, user, pass)) => Right( new DirectCredentials(realm, host, user, pass) )
 				case (errors, _) => Left(errors.mkString("\n"))
