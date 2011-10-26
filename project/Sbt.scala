@@ -102,7 +102,7 @@ object Sbt extends Build
 	lazy val precompiled210 = precompiled("2.10.0-SNAPSHOT", scalaVersionGlobal)
 	lazy val precompiled291 = precompiled("2.9.1", scalaVersionGlobal)
 	lazy val precompiled29 = precompiled("2.9.0-1", scalaVersionGlobal)
-	lazy val precompiled282 = precompiled("2.8.2-SNAPSHOT", scalaVersionGlobal)
+	lazy val precompiled282 = precompiled("2.8.2", scalaVersionGlobal)
 	lazy val precompiled28 = precompiled("2.8.1", scalaVersionGlobal)
 
 		// Implements the core functionality of detecting and propagating changes incrementally.
