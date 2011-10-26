@@ -12,8 +12,8 @@ sealed case class Pure[+T](eval: () => T) extends Task[T]
 final case class Mapped[+T, In <: HList](in: Tasks[In], f: Results[In] => T) extends Task[T]
 final case class MapAll[+T, In <: HList](in: Tasks[In], f: In => T) extends Task[T]
 final case class FlatMapAll[+T, In <: HList](in: Tasks[In], f: In => Task[T]) extends Task[T]
-final case class MapFailure[+T, In <: HList](in: Tasks[In], f: Seq[Incomplete] => T) extends Task[T]
-final case class FlatMapFailure[+T, In <: HList](in: Tasks[In], f: Seq[Incomplete] => Task[T]) extends Task[T]
+final case class MapFailure[+T, In <: HList](in: Tasks[In], f: Seq[IncompleteStub] => T) extends Task[T]
+final case class FlatMapFailure[+T, In <: HList](in: Tasks[In], f: Seq[IncompleteStub] => Task[T]) extends Task[T]
 final case class FlatMapped[+T, In <: HList](in: Tasks[In], f: Results[In] => Task[T]) extends Task[T]
 final case class DependsOn[+T](in: Task[T], deps: Seq[Task[_]]) extends Task[T]
 final case class Join[+T, U](in: Seq[Task[U]], f: Seq[U] => Either[Task[T], T]) extends Task[T] { type Uniform = U }
@@ -24,8 +24,8 @@ trait MultiInTask[In <: HList]
 	def flatMapR[T](f: Results[In] => Task[T]): Task[T]
 	def mapH[T](f: In => T): Task[T]
 	def mapR[T](f: Results[In] => T): Task[T]
-	def flatFailure[T](f: Seq[Incomplete] => Task[T]): Task[T]
-	def mapFailure[T](f: Seq[Incomplete] => T): Task[T]
+	def flatFailure[T](f: Seq[IncompleteStub] => Task[T]): Task[T]
+	def mapFailure[T](f: Seq[IncompleteStub] => T): Task[T]
 }
 trait SingleInTask[S]
 {
@@ -33,8 +33,8 @@ trait SingleInTask[S]
 	def flatMap[T](f: S => Task[T]): Task[T]
 	def map[T](f: S => T): Task[T]
 	def mapR[T](f: Result[S] => T): Task[T]
-	def flatFailure[T](f: Incomplete => Task[T]): Task[T]
-	def mapFailure[T](f: Incomplete => T): Task[T]
+	def flatFailure[T](f: IncompleteStub => Task[T]): Task[T]
+	def mapFailure[T](f: IncompleteStub => T): Task[T]
 	def dependsOn(tasks: Task[_]*): Task[S]
 }
 trait ForkTask[S, CC[_]]
@@ -74,21 +74,21 @@ object Task
 		def flatMapR[T](f: Results[In] => Task[T]): Task[T] = new FlatMapped(tasks, f)
 		def mapH[T](f: In => T): Task[T] = new MapAll(tasks, f)
 		def mapR[T](f: Results[In] => T): Task[T] = new Mapped(tasks, f)
-		def flatFailure[T](f: Seq[Incomplete] => Task[T]): Task[T] = new FlatMapFailure(tasks, f)
-		def mapFailure[T](f: Seq[Incomplete] => T): Task[T] = new MapFailure(tasks, f)
+		def flatFailure[T](f: Seq[IncompleteStub] => Task[T]): Task[T] = new FlatMapFailure(tasks, f)
+		def mapFailure[T](f: Seq[IncompleteStub] => T): Task[T] = new MapFailure(tasks, f)
 	}
 	implicit def singleInputTask[S](in: Task[S]): SingleInTask[S] = new SingleInTask[S] {
 		type HL = S :+: HNil
 		private val ml = in :^: KNil
 		private def headM = (_: Results[HL]).combine.head
 		private def headH = (_: HL).head
-		private def headS = (_: Seq[Incomplete]).head
+		private def headS = (_: Seq[IncompleteStub]).head
 		def flatMapR[T](f: Result[S] => Task[T]): Task[T] = new FlatMapped[T, HL](ml, f ∙ headM)
 		def flatMap[T](f: S => Task[T]): Task[T] = new FlatMapAll(ml, f ∙ headH)
 		def map[T](f: S => T): Task[T] = new MapAll(ml, f ∙ headH)
 		def mapR[T](f: Result[S] => T): Task[T] = new Mapped[T, HL](ml, f ∙ headM)
-		def flatFailure[T](f: Incomplete => Task[T]): Task[T] = new FlatMapFailure(ml, f ∙ headS)
-		def mapFailure[T](f: Incomplete => T): Task[T] = new MapFailure(ml, f ∙ headS)
+		def flatFailure[T](f: IncompleteStub => Task[T]): Task[T] = new FlatMapFailure(ml, f ∙ headS)
+		def mapFailure[T](f: IncompleteStub => T): Task[T] = new MapFailure(ml, f ∙ headS)
 		def dependsOn(tasks: Task[_]*): Task[S] = new DependsOn(in, tasks)
 	}
 
@@ -112,7 +112,7 @@ object Task
 		val uniformIn = tasks
 		def work(mixed: Results[HNil], uniform: Seq[Result[Uniform]]) = {
 			val inc = failures(uniform)
-			if(inc.isEmpty) f(uniform) else throw Incomplete(None, causes = inc)
+			if(inc.isEmpty) f(uniform) else throw IncompleteStub(None, causes = inc)
 		}
 	}
 	def toNode[T, In <: HList](in: Tasks[In], f: Results[In] => Either[Task[T], T]): Node[Task, T] = new Node[Task, T] {
@@ -125,15 +125,15 @@ object Task
 	def allM[In <: HList]: Results[In] => In = in =>
 	{
 		val incs = failuresM(in)
-		if(incs.isEmpty) in.down(Result.tryValue) else throw Incomplete(None, causes = incs)
+		if(incs.isEmpty) in.down(Result.tryValue) else throw IncompleteStub(None, causes = incs)
 	}
 	def all[D]: Seq[Result[D]] => Seq[D] = in =>
 	{
 		val incs = failures(in)
-		if(incs.isEmpty) in.map(Result.tryValue.apply[D]) else throw Incomplete(None, causes = incs)
+		if(incs.isEmpty) in.map(Result.tryValue.apply[D]) else throw IncompleteStub(None, causes = incs)
 	}
-	def failuresM[In <: HList]: Results[In] => Seq[Incomplete] = x => failures[Any](x.toList)
-	def failures[A]: Seq[Result[A]] => Seq[Incomplete] = _.collect { case Inc(i) => i }
+	def failuresM[In <: HList]: Results[In] => Seq[IncompleteStub] = x => failures[Any](x.toList)
+	def failures[A]: Seq[Result[A]] => Seq[IncompleteStub] = _.collect { case Inc(i) => i }
 	
 	def run[T](root: Task[T], checkCycles: Boolean, maxWorkers: Int): Result[T] =
 	{

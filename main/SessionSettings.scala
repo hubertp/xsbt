@@ -11,14 +11,14 @@ package sbt
 
 	import SessionSettings._
 
-final case class SessionSettings(currentBuild: URI, currentProject: Map[URI, String], original: Seq[Setting[_]], append: SessionMap, currentEval: () => Eval)
+final case class SessionSettingsStub(currentBuild: URI, currentProject: Map[URI, String], original: Seq[Setting[_]], append: SessionMap, currentEval: () => Eval)
 {
 	assert(currentProject contains currentBuild, "Current build (" + currentBuild + ") not associated with a current project.")
-	def setCurrent(build: URI, project: String, eval: () => Eval): SessionSettings = copy(currentBuild = build, currentProject = currentProject.updated(build, project), currentEval = eval)
+	def setCurrent(build: URI, project: String, eval: () => Eval): SessionSettingsStub = copy(currentBuild = build, currentProject = currentProject.updated(build, project), currentEval = eval)
 	def current: ProjectRef = ProjectRef(currentBuild, currentProject(currentBuild))
-	def appendSettings(s: Seq[SessionSetting]): SessionSettings = copy(append = modify(append, _ ++ s))
+	def appendSettings(s: Seq[SessionSetting]): SessionSettingsStub = copy(append = modify(append, _ ++ s))
 	def mergeSettings: Seq[Setting[_]] = original ++ merge(append)
-	def clearExtraSettings: SessionSettings = copy(append = Map.empty)
+	def clearExtraSettings: SessionSettingsStub = copy(append = Map.empty)
 
 	private[this] def merge(map: SessionMap): Seq[Setting[_]] = map.values.toSeq.flatten[SessionSetting].map(_._1)
 	private[this] def modify(map: SessionMap, onSeq: Endo[Seq[SessionSetting]]): SessionMap =
@@ -32,7 +32,7 @@ object SessionSettings
 	type SessionSetting = (Setting[_], String)
 	type SessionMap = Map[ProjectRef, Seq[SessionSetting]]
 
-	def reapply(session: SessionSettings, s: State): State =
+	def reapply(session: SessionSettingsStub, s: State): State =
 		BuiltinCommands.reapply(session, Project.structure(s), s)
 	
 	def clearSettings(s: State): State =
@@ -40,7 +40,7 @@ object SessionSettings
 	def clearAllSettings(s: State): State =
 		withSettings(s)(session => reapply(session.clearExtraSettings, s))
 
-	def withSettings(s: State)(f: SessionSettings => State): State =
+	def withSettings(s: State)(f: SessionSettingsStub => State): State =
 	{
 		val extracted = Project extract s
 		import extracted._
@@ -54,7 +54,7 @@ object SessionSettings
 	}
 
 	def pluralize(size: Int, of: String) = size.toString + (if(size == 1) of else (of + "s"))
-	def checkSession(newSession: SessionSettings, oldState: State)
+	def checkSession(newSession: SessionSettingsStub, oldState: State)
 	{
 		val oldSettings = (oldState get Keys.sessionSettings).toList.flatMap(_.append).flatMap(_._2)
 		if(newSession.append.isEmpty && !oldSettings.isEmpty)

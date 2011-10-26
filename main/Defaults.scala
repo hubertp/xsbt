@@ -448,7 +448,7 @@ object Defaults extends BuildCommon
 	@deprecated("Use `docSetting` instead") def docTask: Initialize[Task[File]] =
 		(cacheDirectory, compileInputs, streams, docDirectory, configuration, scaladocOptions) map { (cache, in, s, target, config, options) =>
 			val d = new Scaladoc(in.config.maxErrors, in.compilers.scalac)
-			val cp = in.config.classpath.toList - in.config.classesDirectory
+			val cp = in.config.classpath.toList.filterNot(_ == in.config.classesDirectory)
 			d.cached(cache / "doc", nameForSrc(config.name), in.config.sources, cp, target, options, s.log)
 			target
 		}

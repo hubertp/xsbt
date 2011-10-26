@@ -35,7 +35,7 @@ object Keys
 
 	// Project keys
 	val projectCommand = AttributeKey[Boolean]("project-command", "Marks Commands that were registered for the current Project.")
-	val sessionSettings = AttributeKey[SessionSettings]("session-settings", "Tracks current build, project, and setting modifications.")
+	val sessionSettings = AttributeKey[SessionSettingsStub]("session-settings", "Tracks current build, project, and setting modifications.")
 	val stateBuildStructure = AttributeKey[Load.BuildStructure]("build-structure", "Data structure containing all information about the build definition.")
 	val buildStructure = TaskKey[Load.BuildStructure]("build-structure", "Provides access to the build structure, settings, and streams manager.")
 	val loadedBuild = SettingKey[Load.LoadedBuild]("loaded-build", "Provides access to the loaded project structure.  This is the information available before settings are evaluated.")

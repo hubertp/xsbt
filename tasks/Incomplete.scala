@@ -4,7 +4,7 @@
 package sbt
 
 import Incomplete.{Error, Value => IValue}
-final case class Incomplete(node: Option[AnyRef], tpe: IValue = Error, message: Option[String] = None, causes: Seq[Incomplete] = Nil, directCause: Option[Throwable] = None)
+final case class IncompleteStub(node: Option[AnyRef], tpe: IValue = Error, message: Option[String] = None, causes: Seq[IncompleteStub] = Nil, directCause: Option[Throwable] = None)
 	extends Exception(message.orNull, directCause.orNull) {
 		override def toString = "Incomplete(node=" + node + ", tpe=" + tpe + ", msg=" + message + ", causes=" + causes + ", directCause=" + directCause +")"
 }
@@ -12,38 +12,38 @@ final case class Incomplete(node: Option[AnyRef], tpe: IValue = Error, message: 
 object Incomplete extends Enumeration {
 	val Skipped, Error = Value
 	
-	def transformTD(i: Incomplete)(f: Incomplete => Incomplete): Incomplete = transform(i, true)(f)
-	def transformBU(i: Incomplete)(f: Incomplete => Incomplete): Incomplete = transform(i, false)(f)
-	def transform(i: Incomplete, topDown: Boolean)(f: Incomplete => Incomplete): Incomplete =
+	def transformTD(i: IncompleteStub)(f: IncompleteStub => IncompleteStub): IncompleteStub = transform(i, true)(f)
+	def transformBU(i: IncompleteStub)(f: IncompleteStub => IncompleteStub): IncompleteStub = transform(i, false)(f)
+	def transform(i: IncompleteStub, topDown: Boolean)(f: IncompleteStub => IncompleteStub): IncompleteStub =
 	{
 			import collection.JavaConversions._
-		val visited: collection.mutable.Map[Incomplete,Incomplete] = new java.util.IdentityHashMap[Incomplete, Incomplete]
-		def visit(inc: Incomplete): Incomplete =
+		val visited: collection.mutable.Map[IncompleteStub,IncompleteStub] = new java.util.IdentityHashMap[IncompleteStub, IncompleteStub]
+		def visit(inc: IncompleteStub): IncompleteStub =
 			visited.getOrElseUpdate(inc, if(topDown) visitCauses(f(inc)) else f(visitCauses(inc)))
-		def visitCauses(inc: Incomplete): Incomplete =
+		def visitCauses(inc: IncompleteStub): IncompleteStub =
 			inc.copy(causes = inc.causes.map(visit) )
 
 		visit(i)
 	}
-	def visitAll(i: Incomplete)(f: Incomplete => Unit)
+	def visitAll(i: IncompleteStub)(f: IncompleteStub => Unit)
 	{
-		val visited = IDSet.create[Incomplete]
-		def visit(inc: Incomplete): Unit =
+		val visited = IDSet.create[IncompleteStub]
+		def visit(inc: IncompleteStub): Unit =
 			visited.process(inc)( () ) {
 				f(inc)
 				inc.causes.foreach(visit)
 			}
 		visit(i)
 	}
-	def linearize(i: Incomplete): Seq[Incomplete] =
+	def linearize(i: IncompleteStub): Seq[IncompleteStub] =
 	{
-		var ordered = List[Incomplete]()
+		var ordered = List[IncompleteStub]()
 		visitAll(i) { ordered ::= _ }
 		ordered
 	}
-	def allExceptions(is: Seq[Incomplete]): Iterable[Throwable] =
-		allExceptions(new Incomplete(None, causes = is))
-	def allExceptions(i: Incomplete): Iterable[Throwable] =
+	def allExceptions(is: Seq[IncompleteStub]): Iterable[Throwable] =
+		allExceptions(new IncompleteStub(None, causes = is))
+	def allExceptions(i: IncompleteStub): Iterable[Throwable] =
 	{
 		val exceptions = IDSet.create[Throwable]
 		visitAll(i) { exceptions ++= _.directCause.toList }

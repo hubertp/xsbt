@@ -48,7 +48,7 @@ final class Execute[A[_] <: AnyRef](checkCycles: Boolean, triggers: Triggers[A])
 
 	def dump: String = "State: "  + state.toString + "\n\nResults: " + results + "\n\nCalls: " + callers + "\n\n"
 
-	def run[T](root: A[T])(implicit strategy: Strategy): Result[T] = try { runKeep(root)(strategy)(root) } catch { case i: Incomplete => Inc(i) }
+	def run[T](root: A[T])(implicit strategy: Strategy): Result[T] = try { runKeep(root)(strategy)(root) } catch { case i: IncompleteStub => Inc(i) }
 	def runKeep[T](root: A[T])(implicit strategy: Strategy): RMap[A,Result] =
 	{
 		assert(state.isEmpty, "Execute already running/ran.")
@@ -135,7 +135,7 @@ final class Execute[A[_] <: AnyRef](checkCycles: Boolean, triggers: Triggers[A])
 	def callerResult[T](node: A[T], result: Result[T]): Result[T] =
 		result match {
 			case _: Value[T] => result
-			case Inc(i) => Inc(Incomplete(Some(node), tpe = i.tpe, causes = i :: Nil))
+			case Inc(i) => Inc(IncompleteStub(Some(node), tpe = i.tpe, causes = i :: Nil))
 		}
 
 	def notifyDone( node: A[_], dependent: A[_] )(implicit strategy: Strategy)
@@ -225,8 +225,8 @@ final class Execute[A[_] <: AnyRef](checkCycles: Boolean, triggers: Triggers[A])
 	def work[T](node: A[T], f: => Either[A[T], T])(implicit strategy: Strategy): Completed =
 	{
 		val result = wideConvert(f).left.map {
-			case i: Incomplete => if(i.node.isEmpty) i.copy(node = Some(node)) else i
-			case e => Incomplete(Some(node), Incomplete.Error, directCause = Some(e))
+			case i: IncompleteStub => if(i.node.isEmpty) i.copy(node = Some(node)) else i
+			case e => IncompleteStub(Some(node), Incomplete.Error, directCause = Some(e))
 		}
 		completed {
 			result match {
@@ -318,7 +318,7 @@ final class Execute[A[_] <: AnyRef](checkCycles: Boolean, triggers: Triggers[A])
 		allCallers(node)
 		if(all contains target) cyclic(node, target, "Cyclic reference")
 	}
-	def cyclic[T](caller: A[T], target: A[T], msg: String) = throw new Incomplete(Some(caller), message = Some(msg), directCause = Some( new CyclicException(caller, target, msg) ) )
+	def cyclic[T](caller: A[T], target: A[T], msg: String) = throw new IncompleteStub(Some(caller), message = Some(msg), directCause = Some( new CyclicException(caller, target, msg) ) )
 	final class CyclicException[T](val caller: A[T], val target: A[T], msg: String) extends Exception(msg)
 
 		// state testing

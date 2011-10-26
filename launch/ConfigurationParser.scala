@@ -114,7 +114,7 @@ class ConfigurationParser
 	}
 	def getLogging(m: LabelMap): Logging = check("label", process(m, "level", getLevel))
 	def getLevel(m: Option[String]) = m.map(LogLevel.apply).getOrElse(new Logging(LogLevel.Info))
-	def getSearch(m: LabelMap, defaultPath: File): (Search, LabelMap) =
+	def getSearch(m: LabelMap, defaultPath: File): (SearchStub, LabelMap) =
 		ids(m, "search", Nil) match
 		{
 			case (Nil, newM) => (Search.none, newM)

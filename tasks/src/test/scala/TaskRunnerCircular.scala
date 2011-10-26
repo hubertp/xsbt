@@ -20,7 +20,7 @@ object TaskRunnerCircularTest extends Properties("TaskRunner Circular")
 					iterate(pure((t-1).toString, t-1) )
 			}
 		try { checkResult(tryRun(iterate(top), true, workers), intermediate) }
-		catch { case i: Incomplete if cyclic(i) => ("Unexpected cyclic exception: " + i) |: false }
+		catch { case i: IncompleteStub if cyclic(i) => ("Unexpected cyclic exception: " + i) |: false }
 	}
 	final def checkCircularReferences(intermediate: Int, workers: Int) =
 	{
@@ -33,7 +33,7 @@ object TaskRunnerCircularTest extends Properties("TaskRunner Circular")
 					iterate(pure((t-1).toString, t-1), i-1)
 			}
 		try { tryRun(top, true, workers); false }
-		catch { case i: Incomplete => cyclic(i) }
+		catch { case i: IncompleteStub => cyclic(i) }
 	}
-	def cyclic(i: Incomplete) = Incomplete.allExceptions(i).exists(_.isInstanceOf[Execute[Task]#CyclicException[_]])
+	def cyclic(i: IncompleteStub) = Incomplete.allExceptions(i).exists(_.isInstanceOf[Execute[Task]#CyclicException[_]])
 }

@@ -617,7 +617,7 @@ private final class Repeat[T](partial: Option[Parser[T]], repeated: Parser[T], m
 		else
 			// forced determinism
 			for(value <- repeated.resultEmpty) yield
-				List.make(min, value)
+				List.fill(min)(value)
 	}
 	override def toString = "repeat(" + min + "," + max +"," + partial + "," + repeated + ")"
 }

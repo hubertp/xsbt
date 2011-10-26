@@ -14,8 +14,8 @@ sealed trait MultiInTask[In <: HList]
 	def flatMapR[T](f: Results[In] => Task[T]): Task[T]
 	def map[T](f: In => T): Task[T]
 	def mapR[T](f: Results[In] => T): Task[T]
-	def flatFailure[T](f: Seq[Incomplete] => Task[T]): Task[T]
-	def mapFailure[T](f: Seq[Incomplete] => T): Task[T]
+	def flatFailure[T](f: Seq[IncompleteStub] => Task[T]): Task[T]
+	def mapFailure[T](f: Seq[IncompleteStub] => T): Task[T]
 }
 sealed trait SingleInTask[S]
 {
@@ -23,8 +23,8 @@ sealed trait SingleInTask[S]
 	def flatMap[T](f: S => Task[T]): Task[T]
 	def map[T](f: S => T): Task[T]
 	def mapR[T](f: Result[S] => T): Task[T]
-	def flatFailure[T](f: Incomplete => Task[T]): Task[T]
-	def mapFailure[T](f: Incomplete => T): Task[T]
+	def flatFailure[T](f: IncompleteStub => Task[T]): Task[T]
+	def mapFailure[T](f: IncompleteStub => T): Task[T]
 	def dependsOn(tasks: Task[_]*): Task[S]
 	def andFinally(fin: => Unit): Task[S]
 	def doFinally(t: Task[Unit]): Task[S]
@@ -105,11 +105,11 @@ trait TaskExtra
 	final implicit def multInputTask[In <: HList](tasks: Tasks[In]): MultiInTask[In] = new MultiInTask[In] {
 		def flatMapR[T](f: Results[In] => Task[T]): Task[T] = new FlatMapped(tasks, f)
 		def flatMap[T](f: In => Task[T]): Task[T] = flatMapR(f compose allM)
-		def flatFailure[T](f: Seq[Incomplete] => Task[T]): Task[T] = flatMapR(f compose anyFailM)
+		def flatFailure[T](f: Seq[IncompleteStub] => Task[T]): Task[T] = flatMapR(f compose anyFailM)
 
 		def mapR[T](f: Results[In] => T): Task[T] = new Mapped(tasks, f)
 		def map[T](f: In => T): Task[T] = mapR(f compose allM)
-		def mapFailure[T](f: Seq[Incomplete] => T): Task[T] = mapR(f compose anyFailM)
+		def mapFailure[T](f: Seq[IncompleteStub] => T): Task[T] = mapR(f compose anyFailM)
 	}
 
 	final implicit def singleInputTask[S](in: Task[S]): SingleInTask[S] = new SingleInTask[S] {
@@ -122,10 +122,10 @@ trait TaskExtra
 		def dependsOn(tasks: Task[_]*): Task[S] = new DependsOn(in, tasks)
 		
 		def flatMap[T](f: S => Task[T]): Task[T] = flatMapR(f compose successM)
-		def flatFailure[T](f: Incomplete => Task[T]): Task[T] = flatMapR(f compose failM)
+		def flatFailure[T](f: IncompleteStub => Task[T]): Task[T] = flatMapR(f compose failM)
 		
 		def map[T](f: S => T): Task[T] = mapR(f compose successM)
-		def mapFailure[T](f: Incomplete => T): Task[T] = mapR(f compose failM)
+		def mapFailure[T](f: IncompleteStub => T): Task[T] = mapR(f compose failM)
 		
 		def andFinally(fin: => Unit): Task[S] = mapR(x => Result.tryValue[S]( { fin; x }))
 		def doFinally(t: Task[Unit]): Task[S] = flatMapR(x => t.mapR { tx => Result.tryValues[S](tx :: Nil, x) })
@@ -200,14 +200,14 @@ object TaskExtra extends TaskExtra
 	def reducePair[S](a: Task[S], b: Task[S], f: (S, S) => S): Task[S] =
 		(a :^: b :^: KNil) map { case x :+: y :+: HNil => f(x,y) }
 
-	def anyFailM[In <: HList]: Results[In] => Seq[Incomplete] = in =>
+	def anyFailM[In <: HList]: Results[In] => Seq[IncompleteStub] = in =>
 	{
 		val incs = failuresM(in)
 		if(incs.isEmpty) expectedFailure else incs
 	}
-	def failM[T]: Result[T] => Incomplete = { case Inc(i) => i; case x => expectedFailure }
+	def failM[T]: Result[T] => IncompleteStub = { case Inc(i) => i; case x => expectedFailure }
 
-	def expectedFailure = throw Incomplete(None, message = Some("Expected dependency to fail."))
+	def expectedFailure = throw IncompleteStub(None, message = Some("Expected dependency to fail."))
 
 	def successM[T]: Result[T] => T = { case Inc(i) => throw i; case Value(t) => t }
 	def allM[In <: HList]: Results[In] => In = in =>
@@ -215,14 +215,14 @@ object TaskExtra extends TaskExtra
 		val incs = failuresM(in)
 		if(incs.isEmpty) in.down(Result.tryValue) else throw incompleteDeps(incs)
 	}
-	def failuresM[In <: HList]: Results[In] => Seq[Incomplete] = x => failures[Any](x.toList)
+	def failuresM[In <: HList]: Results[In] => Seq[IncompleteStub] = x => failures[Any](x.toList)
 
 	def all[D](in: Seq[Result[D]]) =
 	{
 		val incs = failures(in)
 		if(incs.isEmpty) in.map(Result.tryValue.fn[D]) else throw incompleteDeps(incs)
 	}
-	def failures[A](results: Seq[Result[A]]): Seq[Incomplete] = results.collect { case Inc(i) => i }
+	def failures[A](results: Seq[Result[A]]): Seq[IncompleteStub] = results.collect { case Inc(i) => i }
 
-	def incompleteDeps(incs: Seq[Incomplete]): Incomplete = Incomplete(None, causes = incs)
+	def incompleteDeps(incs: Seq[IncompleteStub]): IncompleteStub = IncompleteStub(None, causes = incs)
 }

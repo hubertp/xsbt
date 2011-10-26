@@ -17,7 +17,7 @@ object checkResult
 		}
 		catch
 		{
-			case i: Incomplete =>
+			case i: IncompleteStub =>
 				println(i)
 				"One or more tasks failed" |: false
 			case e =>

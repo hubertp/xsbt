@@ -74,18 +74,19 @@ object Repository
 	def defaults: List[xsbti.Repository] = xsbti.Predefined.values.map(Predefined.apply).toList
 }
 
-final case class Search(tpe: Search.Value, paths: List[File])
+// Temporary fix for SI-5084
+final case class SearchStub(tpe: Search.Value, paths: List[File])
 object Search extends Enumeration
 {
-	def none = Search(Current, Nil)
+	def none = SearchStub(Current, Nil)
 	val Only = value("only")
 	val RootFirst = value("root-first")
 	val Nearest = value("nearest")
 	val Current = value("none")
-	def apply(s: String, paths: List[File]): Search = Search(toValue(s), paths)
+	def apply(s: String, paths: List[File]): SearchStub = SearchStub(toValue(s), paths)
 }
 
-final case class BootSetup(directory: File, lock: Boolean, properties: File, search: Search, promptCreate: String, enableQuick: Boolean, promptFill: Boolean)
+final case class BootSetup(directory: File, lock: Boolean, properties: File, search: SearchStub, promptCreate: String, enableQuick: Boolean, promptFill: Boolean)
 {
 	def map(f: File => File) = BootSetup(f(directory), lock, f(properties), search, promptCreate, enableQuick, promptFill)
 }

@@ -516,8 +516,8 @@ object Load
 		}
 	}
 
-	def initialSession(structure: BuildStructure, rootEval: () => Eval): SessionSettings =
-		new SessionSettings(structure.root, rootProjectMap(structure.units), structure.settings, Map.empty, rootEval)
+	def initialSession(structure: BuildStructure, rootEval: () => Eval): SessionSettingsStub =
+		new SessionSettingsStub(structure.root, rootProjectMap(structure.units), structure.settings, Map.empty, rootEval)
 		
 	def rootProjectMap(units: Map[URI, LoadedBuildUnit]): Map[URI, String] =
 	{

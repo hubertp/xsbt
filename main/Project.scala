@@ -60,7 +60,7 @@ sealed trait Project extends ProjectDefinition[ProjectReference]
 }
 sealed trait ResolvedProject extends ProjectDefinition[ProjectRef]
 
-final case class Extracted(structure: BuildStructure, session: SessionSettings, currentRef: ProjectRef)(implicit val showKey: Show[ScopedKey[_]])
+final case class Extracted(structure: BuildStructure, session: SessionSettingsStub, currentRef: ProjectRef)(implicit val showKey: Show[ScopedKey[_]])
 {
 	def rootProject = structure.rootProject
 	lazy val currentUnit = structure units currentRef.build
@@ -110,7 +110,7 @@ object Project extends Init[Scope] with ProjectExtra
 	lazy val showFullKey: Show[ScopedKey[_]] = new Show[ScopedKey[_]] { def apply(key: ScopedKey[_]) = displayFull(key) }
 	def showContextKey(state: State): Show[ScopedKey[_]] =
 		if(isProjectLoaded(state)) showContextKey( session(state), structure(state) ) else showFullKey
-	def showContextKey(session: SessionSettings, structure: BuildStructure): Show[ScopedKey[_]] = showRelativeKey(session.current, structure.allProjects.size > 1)
+	def showContextKey(session: SessionSettingsStub, structure: BuildStructure): Show[ScopedKey[_]] = showRelativeKey(session.current, structure.allProjects.size > 1)
 	def showLoadingKey(loaded: Load.LoadedBuild): Show[ScopedKey[_]] = showRelativeKey( ProjectRef(loaded.root, loaded.units(loaded.root).rootProjects.head), loaded.allProjectRefs.size > 1 )
 	def showRelativeKey(current: ProjectRef, multi: Boolean): Show[ScopedKey[_]] = new Show[ScopedKey[_]] {
 		def apply(key: ScopedKey[_]) = Scope.display(key.scope, key.key.label, ref => displayRelative(current, multi, ref))
@@ -149,11 +149,11 @@ object Project extends Init[Scope] with ProjectExtra
 
 	def getOrError[T](state: State, key: AttributeKey[T], msg: String): T = state get key getOrElse error(msg)
 	def structure(state: State): BuildStructure = getOrError(state, stateBuildStructure, "No build loaded.")
-	def session(state: State): SessionSettings = getOrError(state, sessionSettings, "Session not initialized.")
+	def session(state: State): SessionSettingsStub = getOrError(state, sessionSettings, "Session not initialized.")
 	def isProjectLoaded(state: State): Boolean = (state has sessionSettings) && (state has stateBuildStructure)
 
 	def extract(state: State): Extracted  =  extract( session(state), structure(state) )
-	def extract(se: SessionSettings, st: BuildStructure): Extracted  =  Extracted(st, se, se.current)( showContextKey(se, st) )
+	def extract(se: SessionSettingsStub, st: BuildStructure): Extracted  =  Extracted(st, se, se.current)( showContextKey(se, st) )
 
 	def getProjectForReference(ref: Reference, structure: BuildStructure): Option[ResolvedProject] =
 		ref match { case pr: ProjectRef => getProject(pr, structure); case _ => None }
@@ -167,7 +167,7 @@ object Project extends Init[Scope] with ProjectExtra
 		val previousOnUnload = orIdentity(s get Keys.onUnload.key)
 		previousOnUnload(s.runExitHooks())
 	}
-	def setProject(session: SessionSettings, structure: BuildStructure, s: State): State =
+	def setProject(session: SessionSettingsStub, structure: BuildStructure, s: State): State =
 	{
 		val unloaded = runUnloadHooks(s)
 		val (onLoad, onUnload) = getHooks(structure.data)

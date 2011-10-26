@@ -331,7 +331,7 @@ object BuiltinCommands
 		s
 	}
 	def sessionCommand = Command.make(SessionCommand, sessionBrief, SessionSettings.Help)(SessionSettings.command)
-	def reapply(newSession: SessionSettings, structure: Load.BuildStructure, s: State): State =
+	def reapply(newSession: SessionSettingsStub, structure: Load.BuildStructure, s: State): State =
 	{
 		logger(s).info("Reapplying settings...")
 		val newStructure = Load.reapply(newSession.mergeSettings, structure)( Project.showContextKey(newSession, structure) )
@@ -457,7 +457,7 @@ object BuiltinCommands
 	{
 		e match
 		{
-			case _: Incomplete => () // already handled by evaluateTask
+			case _: IncompleteStub => () // already handled by evaluateTask
 			case _: NoMessageException => ()
 			case ite: InvocationTargetException =>
 				val cause = ite.getCause

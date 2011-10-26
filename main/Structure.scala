@@ -195,8 +195,8 @@ object Scoped
 		def flatMap[T](f: S => Task[T]): Initialize[Task[T]] = flatMapR(f compose successM)
 		def map[T](f: S => T): Initialize[Task[T]] = mapR(f compose successM)
 		def mapR[T](f: Result[S] => T): Initialize[Task[T]] = i(_ mapR f)
-		def flatFailure[T](f: Incomplete => Task[T]): Initialize[Task[T]] = flatMapR(f compose failM)
-		def mapFailure[T](f: Incomplete => T): Initialize[Task[T]] = mapR(f compose failM)
+		def flatFailure[T](f: IncompleteStub => Task[T]): Initialize[Task[T]] = flatMapR(f compose failM)
+		def mapFailure[T](f: IncompleteStub => T): Initialize[Task[T]] = mapR(f compose failM)
 		def andFinally(fin: => Unit): Initialize[Task[S]] = i(_ andFinally fin)
 		def doFinally(t: Task[Unit]): Initialize[Task[S]] = i(_ doFinally t)
 
@@ -343,8 +343,8 @@ object Scoped
 		def flatMapR[T](f: Fun[Result,Task[T]]): App[T] = red.combine(Combine.flatMapR, convertK(f))
 		def map[T](f: Fun[Id, T]): App[T] = red.combine[Id,T](Combine.mapR, convertH(f) compose allM)
 		def mapR[T](f: Fun[Result,T]): App[T] = red.combine[Id,T](Combine.mapR, convertK(f))
-		def flatFailure[T](f: Seq[Incomplete] => Task[T]): App[T] = red.combine(Combine.flatMapR, f compose anyFailM)
-		def mapFailure[T](f: Seq[Incomplete] => T): App[T] = red.combine[Id,T](Combine.mapR, f compose anyFailM)
+		def flatFailure[T](f: Seq[IncompleteStub] => Task[T]): App[T] = red.combine(Combine.flatMapR, f compose anyFailM)
+		def mapFailure[T](f: Seq[IncompleteStub] => T): App[T] = red.combine[Id,T](Combine.mapR, f compose anyFailM)
 	}
 	final class RichTaskable2[A,B](t2: (ScopedTaskable[A], ScopedTaskable[B])) extends RichTaskables(k2(t2))
 	{
@@ -415,8 +415,8 @@ object Scoped
 		def flatMapR[T](f: Results[In] => Task[T]): App[T] = red.combine(Combine.flatMapR, f)
 		def map[T](f: In => T): App[T] = mapR(f compose allM)
 		def mapR[T](f: Results[In] => T): App[T] = red.combine[Id,T](Combine.mapR, f)
-		def flatFailure[T](f: Seq[Incomplete] => Task[T]): App[T] = flatMapR(f compose anyFailM)
-		def mapFailure[T](f: Seq[Incomplete] => T): App[T] = mapR(f compose anyFailM)
+		def flatFailure[T](f: Seq[IncompleteStub] => Task[T]): App[T] = flatMapR(f compose anyFailM)
+		def mapFailure[T](f: Seq[IncompleteStub] => T): App[T] = mapR(f compose anyFailM)
 	}
 
 	implicit def t2ToApp2[A,B](t2: (Initialize[A], Initialize[B]) ): Apply2[A,B] = new Apply2(t2)

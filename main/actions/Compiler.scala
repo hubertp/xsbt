@@ -13,9 +13,9 @@ object Compiler
 {
 	val DefaultMaxErrors = 100
 
-	def allProblems(inc: Incomplete): Seq[Problem] =
+	def allProblems(inc: IncompleteStub): Seq[Problem] =
 		allProblems(inc :: Nil)
-	def allProblems(incs: Seq[Incomplete]): Seq[Problem] =
+	def allProblems(incs: Seq[IncompleteStub]): Seq[Problem] =
 		problems(Incomplete.allExceptions(incs).toSeq)
 	def problems(es: Seq[Throwable]): Seq[Problem]  =
 		es flatMap {

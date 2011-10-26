@@ -44,10 +44,10 @@ object EvaluateTask
 				runTask(task, state, str, structure.index.triggers, checkCycles, maxWorkers)(toNode)
 		}
 	def logIncResult(result: Result[_], streams: Streams) = result match { case Inc(i) => logIncomplete(i, streams); case _ => () }
-	def logIncomplete(result: Incomplete, streams: Streams)
+	def logIncomplete(result: IncompleteStub, streams: Streams)
 	{
 		val all = Incomplete linearize result
-		val keyed = for(Incomplete(Some(key: Project.ScopedKey[_]), _, msg, _, ex) <- all) yield (key, msg, ex)
+		val keyed = for(IncompleteStub(Some(key: Project.ScopedKey[_]), _, msg, _, ex) <- all) yield (key, msg, ex)
 		val un = all.filter { i => i.node.isEmpty || i.message.isEmpty }
 		for( (key, _, Some(ex)) <- keyed)
 			getStreams(key, streams).log.trace(ex)
@@ -85,7 +85,7 @@ object EvaluateTask
 		val x = new Execute[Task](checkCycles, triggers)(taskToNode)
 		val (newState, result) =
 			try applyResults(x.runKeep(root)(service), state, root)
-			catch { case inc: Incomplete => (state, Inc(inc)) }
+			catch { case inc: IncompleteStub => (state, Inc(inc)) }
 			finally shutdown()
 		val replaced = transformInc(result)
 		logIncResult(replaced, streams)
@@ -105,13 +105,13 @@ object EvaluateTask
 	def transformInc[T](result: Result[T]): Result[T] =
 		// taskToKey needs to be before liftAnonymous.  liftA only lifts non-keyed (anonymous) Incompletes.
 		result.toEither.left.map { i => Incomplete.transformBU(i)(convertCyclicInc andThen taskToKey andThen liftAnonymous ) }
-	def taskToKey: Incomplete => Incomplete = {
-		case in @ Incomplete(Some(node: Task[_]), _, _, _, _) => in.copy(node = transformNode(node))
+	def taskToKey: IncompleteStub => IncompleteStub = {
+		case in @ IncompleteStub(Some(node: Task[_]), _, _, _, _) => in.copy(node = transformNode(node))
 		case i => i
 	}
 	type AnyCyclic = Execute[Task]#CyclicException[_]
-	def convertCyclicInc: Incomplete => Incomplete = {
-		case in @ Incomplete(_, _, _, _, Some(c: AnyCyclic)) => in.copy(directCause = Some(new RuntimeException(convertCyclic(c))) )
+	def convertCyclicInc: IncompleteStub => IncompleteStub = {
+		case in @ IncompleteStub(_, _, _, _, Some(c: AnyCyclic)) => in.copy(directCause = Some(new RuntimeException(convertCyclic(c))) )
 		case i => i
 	}
 	def convertCyclic(c: AnyCyclic): String =
@@ -122,8 +122,8 @@ object EvaluateTask
 		}
 	def name(node: Task[_]): String =
 		node.info.name orElse transformNode(node).map(Project.displayFull) getOrElse ("<anon-" + System.identityHashCode(node).toHexString + ">")
-	def liftAnonymous: Incomplete => Incomplete = {
-		case i @ Incomplete(node, tpe, None, causes, None) =>
+	def liftAnonymous: IncompleteStub => IncompleteStub = {
+		case i @ IncompleteStub(node, tpe, None, causes, None) =>
 			causes.find( inc => !inc.node.isDefined && (inc.message.isDefined || inc.directCause.isDefined)) match {
 				case Some(lift) => i.copy(directCause = lift.directCause, message = lift.message)
 				case None => i

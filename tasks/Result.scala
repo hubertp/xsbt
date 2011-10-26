@@ -8,17 +8,17 @@ package sbt
 /** Result of completely evaluating a task.*/
 sealed trait Result[+T]
 {
-	def toEither: Either[Incomplete, T]
+	def toEither: Either[IncompleteStub, T]
 }
 /** Indicates the task did not complete normally and so it does not have a value.*/
-final case class Inc(cause: Incomplete) extends Result[Nothing]
+final case class Inc(cause: IncompleteStub) extends Result[Nothing]
 {
-	def toEither: Either[Incomplete, Nothing] = Left(cause)
+	def toEither: Either[IncompleteStub, Nothing] = Left(cause)
 }
 /** Indicates the task completed normally and produced the given `value`.*/
 final case class Value[+T](value: T) extends Result[T]
 {
-	def toEither: Either[Incomplete, T] = Right(value)
+	def toEither: Either[IncompleteStub, T] = Right(value)
 }
 
 object Result
@@ -36,7 +36,7 @@ object Result
 		r foreach tryValue[Unit]
 		tryValue[S](v)
 	}
-	implicit def fromEither[T](e: Either[Incomplete, T]): Result[T] = e match {
+	implicit def fromEither[T](e: Either[IncompleteStub, T]): Result[T] = e match {
 		case Left(i) => Inc(i)
 		case Right(v) => Value(v)
 	}
