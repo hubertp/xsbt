@@ -70,7 +70,7 @@ final case class Extracted(structure: BuildStructure, session: SessionSettingsSt
 	def get[T](key: SettingKey[T]) = getOrError(inCurrent(key), key.key)
 	def getOpt[T](key: SettingKey[T]): Option[T] = structure.data.get(inCurrent(key), key.key)
 	private[this] def inCurrent[T](key: SettingKey[T]): Scope  =  if(key.scope.project == This) key.scope.copy(project = Select(currentRef)) else key.scope
-	@deprecated("This method does not apply state changes requested during task execution.  Use 'runTask' instead, which does.", "0.11.1")
+	@deprecated("This method does not apply state changes requested during task execution.  Use 'runTask' instead, which does.")
 	def evalTask[T](key: TaskKey[T], state: State): T = runTask(key, state)._2
 	def runTask[T](key: TaskKey[T], state: State): (State, T) =
 	{
@@ -336,7 +336,7 @@ object Project extends Init[Scope] with ProjectExtra
 			val newS = setProjectReturn(s, newBase :: projectReturn(s))
 			(newS, newBase)
 	}
-	@deprecated("This method does not apply state changes requested during task execution.  Use 'runTask' instead, which does.", "0.11.1")
+	@deprecated("This method does not apply state changes requested during task execution.  Use 'runTask' instead, which does.")
 	def evaluateTask[T](taskKey: ScopedKey[Task[T]], state: State, checkCycles: Boolean = false, maxWorkers: Int = EvaluateTask.SystemProcessors): Option[Result[T]] =
 		runTask(taskKey, state, checkCycles, maxWorkers).map(_._2)	
 	def runTask[T](taskKey: ScopedKey[Task[T]], state: State, checkCycles: Boolean = false, maxWorkers: Int = EvaluateTask.SystemProcessors): Option[(State, Result[T])] =

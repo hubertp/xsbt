@@ -15,7 +15,6 @@ package sbt
 	import inc.{FileValueCache, Locate}
 	import org.scalatools.testing.{AnnotatedFingerprint, SubclassFingerprint}
 
-	import sys.error
 	import scala.xml.{Node => XNode,NodeSeq}
 	import org.apache.ivy.core.module.{descriptor, id}
 	import descriptor.ModuleDescriptor, id.ModuleRevisionId
@@ -31,6 +30,8 @@ package sbt
 
 object Defaults extends BuildCommon
 {
+	def error(message: String): Nothing = throw new RuntimeException(message) // For 2.8 compatibility, don't use sys.error
+	
 	def configSrcSub(key: SettingKey[File]): Initialize[File] = (key in ThisScope.copy(config = Global), configuration) { (src, conf) => src / nameForSrc(conf.name) }
 	def nameForSrc(config: String) = if(config == "compile") "main" else config
 	def prefix(config: String) = if(config == "compile") "" else config + "-"

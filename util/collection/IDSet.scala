@@ -42,4 +42,11 @@ object IDSet
 		def process[S](t: T)(ifSeen: S)(ifNew: => S) = if(contains(t)) ifSeen else { this += t ; ifNew }
 		override def toString = backing.toString
 	}
+	
+	private class Compat {
+	  def iterableAsScalaIterable[T](coll: java.util.Set[T]) = collection.JavaConversions.asIterable(coll)
+	  def asIterable[T](coll: java.util.Set[T]): Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
+	}
+	
+	private[this] final implicit def miscCompat(n: AnyRef): Compat = new Compat
 }

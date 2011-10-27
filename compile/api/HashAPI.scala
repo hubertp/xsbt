@@ -89,6 +89,23 @@ final class HashAPI(tags: TypeVars, includePrivate: Boolean, includeParamNames: 
 	}
 	final def hashSymmetric[T](ts: TraversableOnce[T], hashF: T => Unit)
 	{
+	  class Compat[A](underlying: List[A]) {
+	    def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (List[A1], List[A2], List[A3]) = {
+        val b1 = underlying.genericBuilder[A1]
+        val b2 = underlying.genericBuilder[A2]
+        val b3 = underlying.genericBuilder[A3]
+        for (xyz <- underlying) {
+          val (x, y, z) = asTriple(xyz)
+          b1 += x
+          b2 += y
+          b3 += z
+        }
+        (b1.result, b2.result, b3.result)
+	    }
+	  }
+	  
+	  implicit def unzip3Compat[A](a: List[A]) = new Compat(a)
+	  
 		val current = hash
 		val mA = magicA
 		val mB = magicB
@@ -98,7 +115,7 @@ final class HashAPI(tags: TypeVars, includePrivate: Boolean, includeParamNames: 
 			magicB = startMagicB
 			hashF(t)
 			(finalizeHash(hash), magicA, magicB)
-		} unzip3;
+		}.unzip3
 		hash = current
 		magicA = mA
 		magicB = mB

@@ -114,7 +114,7 @@ private class MRelations(val srcProd: Relation[File, File], val binaryDep: Relat
 		new MRelations(srcProd -- sources, binaryDep -- sources, internalSrcDep -- sources, externalDep -- sources, classes -- sources)
 
   /** Making large Relations a little readable. */
-  private val userDir = sys.props("user.dir").stripSuffix("/") + "/"
+  private val userDir = System.getProperty("user.dir").stripSuffix("/") + "/" // be dumm and don't use sys package, sorry not ported to 2.8
   private def nocwd(s: String)              = s stripPrefix userDir
   private def line_s(kv: (Any, Any))        = "    " + nocwd("" + kv._1) + " -> " + nocwd("" + kv._2) + "\n"
   private def relation_s(r: Relation[_, _]) = (

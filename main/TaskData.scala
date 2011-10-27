@@ -11,7 +11,7 @@ package sbt
 
 	import sbinary.{Format, Operations}
 
-@deprecated("Superseded by task state system.", "0.11.1") 
+@deprecated("Superseded by task state system.") 
 object TaskData
 {
 	val DefaultDataID = "data"

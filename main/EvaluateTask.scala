@@ -35,7 +35,7 @@ object EvaluateTask
 		processResult(result, log)
 	}
 
-	@deprecated("This method does not apply state changes requested during task execution.  Use 'apply' instead, which does.", "0.11.1")
+	@deprecated("This method does not apply state changes requested during task execution.  Use 'apply' instead, which does.")
 	def evaluateTask[T](structure: BuildStructure, taskKey: ScopedKey[Task[T]], state: State, ref: ProjectRef, checkCycles: Boolean = false, maxWorkers: Int = SystemProcessors): Option[Result[T]] =
 		apply(structure, taskKey, state, ref, checkCycles, maxWorkers).map(_._2)
 	def apply[T](structure: BuildStructure, taskKey: ScopedKey[Task[T]], state: State, ref: ProjectRef, checkCycles: Boolean = false, maxWorkers: Int = SystemProcessors): Option[(State, Result[T])] =
