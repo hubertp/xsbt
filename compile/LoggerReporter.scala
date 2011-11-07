@@ -64,6 +64,9 @@ class LoggerReporter(maximumErrors: Int, log: Logger) extends xsbti.Reporter
 	def hasWarnings = count.get(Warn) > 0
 	def hasErrors = count.get(Error) > 0
 	def problems = allProblems.toArray
+	def comment(pos: Position, msg: String) {
+	  log.info(msg)
+	}
 
 	def printSummary()
 	{

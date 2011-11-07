@@ -41,6 +41,12 @@ private final class DelegatingReporter(warnFatal: Boolean, delegate: xsbti.Repor
 		super.reset
 		delegate.reset
 	}
+	
+	override def comment(pos: Position, msg: String)
+	{
+	  delegate.comment(convert(pos), msg) 
+	}
+	
 	protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean)
 	{
 		val severity = if(warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
